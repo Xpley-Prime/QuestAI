@@ -31,7 +31,7 @@ public class MainActivity extends Activity implements RecognitionListener {
     private TextToSpeech tts;
     private TextView status, transcript;
     private ScrollView scroll;
-    private boolean enabled = false, speaking = false, listening = false, destroyed = false;
+    private boolean enabled = false, speaking = false, listening = false, destroyed = false, awaitingCommand = false;
     private long lastError = 0;
     private static final String WAKE = "эй квест";
     private final Runnable restart = this::listen;
@@ -176,14 +176,14 @@ public class MainActivity extends Activity implements RecognitionListener {
     private void handle(String raw) {
         String text = raw.toLowerCase(new Locale("ru", "RU"));
         int i = text.indexOf(WAKE);
-        if (i < 0) { schedule(250); return; }
-        String command = raw.substring(i + WAKE.length()).replaceFirst("^[,.:!\\s]+", "").trim();
+        if (i < 0 && !awaitingCommand) { schedule(250); return; }
+        String command = (i >= 0 ? raw.substring(i + WAKE.length()) : raw).replaceFirst("^[,.:!\\s]+", "").trim();
         if (command.isEmpty()) {
-            append("QuestAI", "Слушаю. Скажи команду вместе с «Эй, Квест».");
+            awaitingCommand = true;\n            append("QuestAI", "Слушаю. Говори команду.");
             schedule(400);
             return;
         }
-        append("Ты", command);
+        awaitingCommand = false;\n        append("Ты", command);
         String reply = answer(command);
         append("QuestAI", reply);
         if (tts != null) {
