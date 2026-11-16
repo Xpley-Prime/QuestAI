@@ -30,10 +30,13 @@ jobs:
           unzip -q /tmp/vosk-model.zip -d /tmp/vosk-unpacked
           cp -a /tmp/vosk-unpacked/vosk-model-small-ru-0.22/. app/src/main/assets/model-ru/
           test -f app/src/main/assets/model-ru/am/final.mdl
+      - name: Fetch llama.cpp native inference engine
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git app/src/main/cpp/llama.cpp
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: QuestAI-Offline-Voice-APK
+          name: QuestAI-Local-LLM-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
