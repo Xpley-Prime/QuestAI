@@ -13,19 +13,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Locate Android SDK manager
-        run: |
-          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-      - name: Install required packages
+      - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Bundle offline Russian Vosk model
+        run: |
+          set -euxo pipefail
+          curl --fail --location --retry 3 -o /tmp/vosk-model.zip https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip
+          mkdir -p /tmp/vosk-unpacked app/src/main/assets/model-ru
+          unzip -q /tmp/vosk-model.zip -d /tmp/vosk-unpacked
+          cp -a /tmp/vosk-unpacked/vosk-model-small-ru-0.22/. app/src/main/assets/model-ru/
+          test -f app/src/main/assets/model-ru/am/final.mdl
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: QuestAI-Voice-APK
+          name: QuestAI-Offline-Voice-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
