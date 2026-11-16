@@ -179,11 +179,13 @@ public class MainActivity extends Activity implements RecognitionListener {
         if (i < 0 && !awaitingCommand) { schedule(250); return; }
         String command = (i >= 0 ? raw.substring(i + WAKE.length()) : raw).replaceFirst("^[,.:!\\s]+", "").trim();
         if (command.isEmpty()) {
-            awaitingCommand = true;\n            append("QuestAI", "Слушаю. Говори команду.");
+            awaitingCommand = true;
+            append("QuestAI", "Слушаю. Говори команду.");
             schedule(400);
             return;
         }
-        awaitingCommand = false;\n        append("Ты", command);
+        awaitingCommand = false;
+        append("Ты", command);
         String reply = answer(command);
         append("QuestAI", reply);
         if (tts != null) {
