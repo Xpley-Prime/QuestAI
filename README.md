@@ -1,31 +1,28 @@
-# QuestAI for Meta Quest 3S
+# QuestAI — local AI assistant for Meta Quest 3S
 
-An Android VR-window voice assistant with **fully local Russian speech recognition** using [Vosk](https://alphacephei.com/vosk/), spoken answers via Android TTS and a visible conversation history.
+## Architecture
+- **Vosk small Russian**: bundled offline Russian speech recognition, microphone listens continuously while the app is foregrounded
+- **Qwen2.5 0.5B Instruct Q4_K_M**: actual on-device language model for open-ended questions, running with llama.cpp ARM64 CPU inference
+- **Android TTS**: spoken answers where a Russian voice is installed
+- **Conversation window**: recognized commands and assistant answers in text
+- **Wake phrase**: «Эй, Квест» followed by a command
+- **Commands**: date, time, greetings, settings, plus LLM fallback for free-form questions
 
-## How it works
-1. Install the APK from the latest **successful** GitHub Actions build.
-2. Launch QuestAI from Unknown Sources and grant microphone permission.
-3. Press **▶ Запустить**.
-4. Say **«Эй, Квест»**, then **«сколько времени?»** (or both in one phrase).
-5. The app shows the recognized command and its response, and tries to speak the answer.
-6. Recognition continues until you press Stop or leave the app.
+## First launch
+1. Download the artifact `QuestAI-Local-LLM-APK` from a **successful** GitHub Actions run.
+2. Extract `app-debug.apk` from the artifact ZIP and install it on the Quest.
+3. Allow microphone access, press **Запустить**.
+4. On first launch, QuestAI downloads Qwen2.5 0.5B Q4 (~400 MB) to the headset from Hugging Face. **Internet is needed once**. It then loads the model locally. Do not close the app during download.
+5. The bundled Vosk speech model is unpacked from the APK on first use.
+6. Say «Эй, Квест», then your question. The answer is shown and read aloud if Android TTS supports Russian.
 
-The GitHub Actions build downloads `vosk-model-small-ru-0.22.zip` from the official Vosk website and packages the Russian acoustic model inside the APK. The app unpacks the model on first start. **No internet connection is needed for speech recognition after installation.**
+## Offline and limitations
+After both models are available, voice recognition and LLM inference run **locally**. No paid API key is needed. The Qwen 0.5B model is small and may be inaccurate. LLM inference can be slow on headset hardware. The Android TTS voice may need separate installation. App microphone access stops on leaving the foreground. System-wide assistant activation, access to games, and privileged device control are not implemented.
 
-## Supported commands
-Time, date, greeting, help, repeat, and opening Android settings. Unsupported queries receive an explicit fallback response.
+## Building
+The CI workflow fetches the official Vosk Russian model, clones llama.cpp, builds an ARM64 JNI bridge with the Android NDK and packages an APK. The APK is **not verified** until the GitHub Actions run completes successfully and it is tested on a Quest 3S. Native llama.cpp API changes can require pinning a compatible revision.
 
-## Limitations
-**A local large language model (LLM) is not integrated yet.** Vosk is speech-to-text, not a generative AI. Free-form chat, natural-language tools, and broad device control are not currently implemented. Do not describe this version as a completed AI assistant.
-
-TTS is provided by Android; offline spoken output requires a working Russian voice installed on the headset. Text output works without TTS.
-
-The microphone is active only while the app is in the foreground. This version does not intercept headset buttons or listen during other games.
-
-## Build
-GitHub → Actions → Build Quest APK → latest successful run → artifact `QuestAI-Offline-Voice-APK`. Extract the ZIP and install `app-debug.apk`.
-
-**A green GitHub Actions run is required to confirm an installable APK.** If the workflow fails, inspect its job logs before attempting installation.
-
-## License notes
-Vosk engine and its model have their own licenses. Review the upstream model's terms before distribution.
+## Sources
+Vosk: https://alphacephei.com/vosk/
+llama.cpp: https://github.com/ggml-org/llama.cpp
+Qwen GGUF: https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF
