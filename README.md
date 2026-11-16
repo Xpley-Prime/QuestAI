@@ -1,25 +1,31 @@
-# QuestAI Voice for Meta Quest 3S
+# QuestAI for Meta Quest 3S
 
-Android foreground voice assistant prototype. No PC is required **to run the APK once installed**.
+An Android VR-window voice assistant with **fully local Russian speech recognition** using [Vosk](https://alphacephei.com/vosk/), spoken answers via Android TTS and a visible conversation history.
 
-## Current features
-- Russian speech commands with wake phrase **«Эй, Квест»** (together with a command, or as a separate phrase)
-- Visible conversation transcript in the app
-- Spoken answers through installed Android Text-to-Speech
-- Time, date, greetings, help, repeat, attempt to open system settings
-- Start/stop microphone button; microphone stops when the app is not foregrounded
+## How it works
+1. Install the APK from the latest **successful** GitHub Actions build.
+2. Launch QuestAI from Unknown Sources and grant microphone permission.
+3. Press **▶ Запустить**.
+4. Say **«Эй, Квест»**, then **«сколько времени?»** (or both in one phrase).
+5. The app shows the recognized command and its response, and tries to speak the answer.
+6. Recognition continues until you press Stop or leave the app.
 
-## Important limitations
-- This is **not yet a local LLM**. Unknown questions receive an honest fallback.
-- Speech recognition uses Android SpeechRecognizer with EXTRA_PREFER_OFFLINE. This is a preference, **not a guarantee** that recognition works offline. An installed offline Russian recognition engine is required for genuine offline use.
-- Android TTS requires a Russian voice installed on the device for offline speech output.
-- Continuous recognition is implemented by restarting speech recognition after each utterance. Behavior on Quest/Horizon OS must be tested; the OS can restrict microphone access.
-- No background service, no system button interception, no cloud API keys.
+The GitHub Actions build downloads `vosk-model-small-ru-0.22.zip` from the official Vosk website and packages the Russian acoustic model inside the APK. The app unpacks the model on first start. **No internet connection is needed for speech recognition after installation.**
+
+## Supported commands
+Time, date, greeting, help, repeat, and opening Android settings. Unsupported queries receive an explicit fallback response.
+
+## Limitations
+**A local large language model (LLM) is not integrated yet.** Vosk is speech-to-text, not a generative AI. Free-form chat, natural-language tools, and broad device control are not currently implemented. Do not describe this version as a completed AI assistant.
+
+TTS is provided by Android; offline spoken output requires a working Russian voice installed on the headset. Text output works without TTS.
+
+The microphone is active only while the app is in the foreground. This version does not intercept headset buttons or listen during other games.
 
 ## Build
-GitHub Actions: Actions → Build Quest APK → latest **successful** run → artifact **QuestAI-Voice-APK**. Extract the ZIP and install app-debug.apk.
+GitHub → Actions → Build Quest APK → latest successful run → artifact `QuestAI-Offline-Voice-APK`. Extract the ZIP and install `app-debug.apk`.
 
-If the build is red, no valid APK should be assumed. The Android project can also be built using Gradle 8.9 and Android SDK 35.
+**A green GitHub Actions run is required to confirm an installable APK.** If the workflow fails, inspect its job logs before attempting installation.
 
-## Usage
-Grant microphone permission, tap **Запустить**, say **«Эй, Квест, сколько времени?»**. Responses appear in text and are spoken.
+## License notes
+Vosk engine and its model have their own licenses. Review the upstream model's terms before distribution.
