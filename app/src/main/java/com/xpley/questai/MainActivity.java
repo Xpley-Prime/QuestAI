@@ -33,6 +33,8 @@ public class MainActivity extends Activity implements RecognitionListener {
     private SpeechService service;
     private Model model;
     private TextToSpeech tts;
+    private LocalLlm llm;
+    private boolean generating;
     private boolean active, preparing, speaking, wake, closing;
     private long lastHeard;
     private static final String WAKE = "эй квест";
@@ -78,6 +80,7 @@ public class MainActivity extends Activity implements RecognitionListener {
         setContentView(root);
         add("QuestAI", "Привет! Нажми «Запустить», затем скажи «Эй, Квест».");
         setStatus("Подготовка...");
+        llm = new LocalLlm(this);
         tts = new TextToSpeech(this, code -> {
             if (code == TextToSpeech.SUCCESS) {
                 int language = tts.setLanguage(new Locale("ru", "RU"));
@@ -101,6 +104,11 @@ public class MainActivity extends Activity implements RecognitionListener {
     private void setStatus(String text) { status.setText(text); }
     private void start() {
         if (active || preparing) return;
+        llm.prepare(new LocalLlm.Listener() {
+            @Override public void onProgress(String message) { runOnUiThread(() -> setStatus(message)); }
+            @Override public void onReady() { runOnUiThread(() -> { add("Система", "Локальная нейросеть Qwen готова."); if (active && service != null) setStatus("● Слушаю: «Эй, Квест»"); }); }
+            @Override public void onError(String message) { runOnUiThread(() -> add("Ошибка ИИ", message)); }
+        });
         active = true; wake = false;
         startButton.setText("■ Остановить");
         if (model != null) { beginCapture(); return; }
@@ -114,7 +122,7 @@ public class MainActivity extends Activity implements RecognitionListener {
     }
     private void beginCapture() {
         ui.removeCallbacks(resume);
-        if (!active || speaking || closing || model == null || service != null) return;
+        if (!active || speaking || generating || closing || model == null || service != null) return;
         try {
             service = new SpeechService(new Recognizer(model, 16000.0f), 16000.0f);
             service.startListening(this);
@@ -160,8 +168,20 @@ public class MainActivity extends Activity implements RecognitionListener {
         wake = false;
         add("Ты", text);
         String reply = answer(text);
-        add("QuestAI", reply);
-        speak(reply);
+        if (reply == null) {
+            stopCapture();
+            generating = true;
+            setStatus("◉ Думаю локально...");
+            llm.generate(text, response -> runOnUiThread(() -> {
+                generating = false;
+                if (!active || closing) return;
+                add("QuestAI", response);
+                speak(response);
+            }));
+        } else {
+            add("QuestAI", reply);
+            speak(reply);
+        }
     }
     private String answer(String q) {
         if (q.contains("время") || q.contains("который час"))
@@ -176,8 +196,8 @@ public class MainActivity extends Activity implements RecognitionListener {
             catch (Exception e) { return "Не удалось открыть настройки."; }
         }
         if (q.contains("помощь") || q.contains("умеешь"))
-            return "Пока доступны время, дата, настройки и простые команды. Свободные ответы нейросети ещё не подключены.";
-        return "Я услышал тебя, но для ответа на свободный вопрос ещё нужна локальная языковая модель.";
+            return "Пока доступны время, дата, настройки и простые команды. На свободные вопросы отвечает локальная нейросеть Qwen.";
+        return null;
     }
     private void speak(String reply) {
         stopCapture();
@@ -231,6 +251,7 @@ public class MainActivity extends Activity implements RecognitionListener {
     @Override protected void onDestroy() {
         closing = true; stop(); ui.removeCallbacksAndMessages(null);
         if (model != null) model.close();
+        if (llm != null) llm.shutdown();
         if (tts != null) { tts.stop(); tts.shutdown(); }
         super.onDestroy();
     }
