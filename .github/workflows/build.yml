@@ -30,6 +30,10 @@ jobs:
           unzip -q /tmp/vosk-model.zip -d /tmp/vosk-unpacked
           cp -a /tmp/vosk-unpacked/vosk-model-small-ru-0.22/. app/src/main/assets/model-ru/
           test -f app/src/main/assets/model-ru/am/final.mdl
+          # Vosk StorageService requires a uuid file in the asset model root.
+          # Its contents act as the unpacked-model version marker.
+          printf "vosk-small-ru-0.22-questai-v1\\n" > app/src/main/assets/model-ru/uuid
+          test -s app/src/main/assets/model-ru/uuid
       - name: Fetch llama.cpp native inference engine
         run: |
           git clone --depth 1 https://github.com/ggml-org/llama.cpp.git app/src/main/cpp/llama.cpp
